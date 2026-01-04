@@ -1,0 +1,17 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+#gameCanvas {
+    border: 1px solid #333;
+    background: #222;
+}
