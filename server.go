@@ -87,23 +87,20 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// Найти или создать сессию
 	var session *Session
 	if s, ok := sessions[sessionID]; ok {
 		session = s
 	} else {
-		// В создании новой сессии:
 		session = &Session{
 			ID:          sessionID,
 			Players:     make(map[string]*Player),
 			Bullets:     make(map[string]*Bullet),
 			XPItems:     make(map[string]*XPItem),
-			XPAreas:     make(map[string]*XPArea), // <= Добавьте
+			XPAreas:     make(map[string]*XPArea),
 			WorldWidth:  2000,
 			WorldHeight: 2000,
 		}
 
-		// Генерируем XPItems
 		for i := 0; i < 20; i++ {
 			session.XPItems[randString(6)] = &XPItem{
 				ID:    randString(6),
@@ -113,8 +110,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Генерируем XPAreas
-		for i := 0; i < 3; i++ { // Например, 3 зоны
+		for i := 0; i < 3; i++ {
 			session.XPAreas[randString(6)] = &XPArea{
 				ID:           randString(6),
 				X:            rand.Float64() * 2000,
@@ -154,11 +150,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	conn.WriteJSON(map[string]interface{}{"type": "id", "id": id, "session": sessionID})
 
-	// Отправляем состояние сессии
 	session.Mutex.RLock()
 	conn.WriteJSON(map[string]interface{}{
 		"type":    "sessionState",
-		"session": session, // <= Отправляем весь объект
+		"session": session,
 	})
 	session.Mutex.RUnlock()
 
@@ -187,7 +182,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				p.X = data["x"].(float64)
 				p.Y = data["y"].(float64)
 				p.Angle = data["angle"].(float64)
-				// Рассылаем обновление всем
 				broadcastToSession(session, msg)
 			}
 		case "shoot":
@@ -205,10 +199,8 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			session.Bullets[bullet.ID] = bullet
 			broadcastToSession(session, msg)
 		case "orbCollected":
-			// Удаляем orb по ID
 			delete(session.XPItems, data["id"].(string))
 
-			// Создаем новый orb
 			newID := randString(6)
 			session.XPItems[newID] = &XPItem{
 				ID:    newID,
@@ -217,7 +209,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				Value: 20 + rand.Intn(61),
 			}
 
-			// Рассылаем обновление состояния всем клиентам
 			broadcastToSession(session, mustJson(map[string]interface{}{
 				"type":    "sessionState",
 				"session": session,
